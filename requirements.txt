@@ -1,0 +1,7 @@
+# Zaktualizowana lista wymagań z Flask w wersji 2.2.5
+Flask==2.2.5
+Flask-SQLAlchemy==3.0.3
+python-dotenv==1.0.1
+pandas==2.2.2
+openpyxl==3.1.2
+google-generativeai==0.7.1
