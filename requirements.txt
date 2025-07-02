@@ -9,3 +9,4 @@ Flask-Cors>=4.0.0
 Flask-Bcrypt
 Flask-JWT-Extended
 gunicorn
+Pillow>=10.0.0 # <-- NOWA BIBLIOTEKA
