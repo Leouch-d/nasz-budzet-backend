@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@types/node": "^24.0.4"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "8.4.1",
+    "cors": "^2.8.5",
+    "expo": "^53.0.13"
+  }
+}
