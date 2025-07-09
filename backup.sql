@@ -1,71 +1,127 @@
-PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
+
+-- Tworzenie tabel
 CREATE TABLE kategorie (
-	id INTEGER NOT NULL, 
-	nazwa VARCHAR(100) NOT NULL, 
-	typ VARCHAR(20) NOT NULL, 
-	PRIMARY KEY (id), 
-	UNIQUE (nazwa)
+    id INTEGER NOT NULL,
+    nazwa VARCHAR(100) NOT NULL,
+    typ VARCHAR(20) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (nazwa)
 );
-INSERT INTO kategorie VALUES(1,'inne','wydatek');
-INSERT INTO kategorie VALUES(3,'Rozrywka','wydatek');
-INSERT INTO kategorie VALUES(4,'Jedzenie','wydatek');
-INSERT INTO kategorie VALUES(5,'Podatki','wydatek');
-INSERT INTO kategorie VALUES(6,'Raty','wydatek');
-INSERT INTO kategorie VALUES(7,'Paliwo','wydatek');
-INSERT INTO kategorie VALUES(8,'Pensja','przychód');
+
 CREATE TABLE transakcje (
-	id INTEGER NOT NULL, 
-	typ VARCHAR(20) NOT NULL, 
-	miesiac VARCHAR(7) NOT NULL, 
-	kategoria VARCHAR(100), 
-	opis VARCHAR(255), 
-	kwota FLOAT NOT NULL, 
-	data_transakcji DATETIME NOT NULL, 
-	uzytkownik VARCHAR(50) NOT NULL, 
-	PRIMARY KEY (id)
+    id INTEGER NOT NULL,
+    typ VARCHAR(20) NOT NULL,
+    miesiac VARCHAR(7) NOT NULL,
+    kategoria VARCHAR(100),
+    opis VARCHAR(255),
+    kwota FLOAT NOT NULL,
+    data_transakcji DATETIME NOT NULL,
+    uzytkownik VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
 );
-INSERT INTO transakcje VALUES(1,'wydatek','2025-06','Pensja','Pensja',1000.0,'2025-06-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(2,'przychód','2025-06','Pensja','Pensja',10000.0,'2025-06-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(3,'wydatek','2025-06','Jedzenie','lidl',1000.0,'2025-06-30 08:23:35.957000','Maja');
-INSERT INTO transakcje VALUES(4,'wydatek','2025-06','Jedzenie','biedronka',500.0,'2025-06-30 08:41:38.151000','Jacek');
-INSERT INTO transakcje VALUES(5,'wydatek','2025-06','Jedzenie','biedronka',100.0,'2025-06-30 12:47:13.232000','Jacek');
-INSERT INTO transakcje VALUES(6,'przychód','2025-07','Pensja','Pensja RSB',6300.0,'2025-07-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(7,'wydatek','2025-05','Jedzenie','biedra',2000.0,'2025-05-02 03:27:00.000000','Jacek');
-INSERT INTO transakcje VALUES(8,'wydatek','2025-07','inne','test',200.0,'2025-07-02 07:44:56.637000','Maja');
-INSERT INTO transakcje VALUES(9,'wydatek','2025-07','Raty','rata testowa',100.0,'2025-07-02 08:01:26.097000','Jacek');
-INSERT INTO transakcje VALUES(10,'wydatek','2025-07','Raty','rata testowa',100.0,'2025-07-02 08:21:54.300000','Jacek');
-INSERT INTO transakcje VALUES(11,'wydatek','2025-07','Raty','rata testowa',100.0,'2025-07-02 08:22:53.376000','Jacek');
-INSERT INTO transakcje VALUES(12,'wydatek','2025-07','Podatki','rata testowa',1000.0,'2025-07-02 06:23:02.421000','Jacek');
-INSERT INTO transakcje VALUES(13,'wydatek','2025-07','Inne','bioedra',100.0,'2025-07-02 09:19:46.075000','Jacek');
-INSERT INTO transakcje VALUES(14,'wydatek','2025-07','Inne','sklep',240.0,'2025-07-02 00:00:00.000000','Jacek');
-INSERT INTO transakcje VALUES(15,'przychód','2024-12','Pensja','Pensja RSB',6300.0,'2024-12-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(16,'wydatek','2024-12','Raty','rata testowa',100.0,'2024-12-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(17,'wydatek','2024-12','Inne','Etam',100.0,'2024-12-21 00:00:00.000000','Jacek');
-INSERT INTO transakcje VALUES(18,'wydatek','2025-07','Inne','jedzenie',1000.0,'2025-07-02 11:50:36.137000','Jacek');
-INSERT INTO transakcje VALUES(19,'wydatek','2025-07','Jedzenie','Biedronka',1000.0,'2025-07-02 09:50:54.238000','Jacek');
-INSERT INTO transakcje VALUES(20,'wydatek','2025-07','Inne','wre',2134.0,'2025-07-02 12:29:25.792000','Jacek');
-INSERT INTO transakcje VALUES(21,'wydatek','2025-07','Inne','biedronka',100.0,'2025-07-02 14:20:02.497000','Jacek');
-INSERT INTO transakcje VALUES(22,'wydatek','2025-05','Inne','Selia Duty Free',22.0,'2025-05-18 00:00:00.000000','Jacek');
-INSERT INTO transakcje VALUES(23,'wydatek','2025-07','Inne','POLREGIO S.A.',6.5,'2025-07-01 00:00:00.000000','Jacek');
-INSERT INTO transakcje VALUES(24,'przychód','2020-01','Pensja','Pensja RSB',6300.0,'2020-01-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(25,'wydatek','2020-01','Raty','rata testowa',100.0,'2020-01-01 00:00:00.000000','System');
-INSERT INTO transakcje VALUES(26,'wydatek','2020-01','Inne','PROMES S.C.',31.2100000000000008,'2020-01-19 00:00:00.000000','Jacek');
-INSERT INTO transakcje VALUES(27,'wydatek','2020-01','Inne','PROMES S.C.',31.2100000000000008,'2020-01-19 00:00:00.000000','Jacek');
+
 CREATE TABLE kategoria_limit (
-	kategoria VARCHAR(100) NOT NULL, 
-	"limit" FLOAT NOT NULL, 
-	PRIMARY KEY (kategoria)
+    kategoria VARCHAR(100) NOT NULL,
+    "limit" FLOAT NOT NULL,
+    PRIMARY KEY (kategoria)
 );
-INSERT INTO kategoria_limit VALUES('Jedzenie',2500.0);
+
 CREATE TABLE szablony_transakcji (
-	id INTEGER NOT NULL, 
-	typ VARCHAR(20) NOT NULL, 
-	kategoria VARCHAR(100) NOT NULL, 
-	opis VARCHAR(255) NOT NULL, 
-	kwota FLOAT NOT NULL, 
-	PRIMARY KEY (id)
+    id INTEGER NOT NULL,
+    typ VARCHAR(20) NOT NULL,
+    kategoria VARCHAR(100) NOT NULL,
+    opis VARCHAR(255) NOT NULL,
+    kwota FLOAT NOT NULL,
+    PRIMARY KEY (id)
 );
-INSERT INTO szablony_transakcji VALUES(1,'przychód','Pensja','Pensja RSB',6300.0);
-INSERT INTO szablony_transakcji VALUES(2,'wydatek','Raty','rata testowa',100.0);
+
+-- Wstawianie danych
+-- Kategorie
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (1, 'Podatki/Raty/Opłaty', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (2, 'Jedzenie', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (3, 'Inne', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (4, 'Lekarze i leki', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (5, 'Rozrywka', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (6, 'Paliwo', 'wydatek');
+INSERT INTO "kategorie" ("id", "nazwa", "typ") VALUES (7, 'Przychody', 'przychód');
+
+-- Limity
+INSERT INTO "kategoria_limit" ("kategoria", "limit") VALUES ('Jedzenie', 2500.00);
+INSERT INTO "kategoria_limit" ("kategoria", "limit") VALUES ('Paliwo', 1000.00);
+
+-- Szablony transakcji (Automaty)
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (1, 'wydatek', 'Podatki/Raty/Opłaty', 'Internet', 120.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (2, 'wydatek', 'Podatki/Raty/Opłaty', 'Kredyt', 1229.04);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (3, 'wydatek', 'Podatki/Raty/Opłaty', 'Raty Alior do 08.2026', 180.39);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (4, 'wydatek', 'Podatki/Raty/Opłaty', 'Raty Alior do 10.2026', 48.42);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (5, 'wydatek', 'Podatki/Raty/Opłaty', 'Raty Alior do 10.2026', 54.44);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (6, 'wydatek', 'Podatki/Raty/Opłaty', 'Raty Alior do 05.2026', 182.45);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (7, 'wydatek', 'Podatki/Raty/Opłaty', 'Śmieci', 195.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (8, 'wydatek', 'Podatki/Raty/Opłaty', 'Kredyt do 06.2027', 180.77);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (9, 'wydatek', 'Podatki/Raty/Opłaty', 'Santander kredyt do 12.2026', 227.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (10, 'wydatek', 'Podatki/Raty/Opłaty', 'Telefony (3)', 90.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (11, 'wydatek', 'Rozrywka', 'netflix', 33.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (12, 'wydatek', 'Rozrywka', 'Youtube premium', 60.00);
+-- Szablony przychodów (NOWOŚĆ)
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (13, 'przychód', 'Przychody', 'Pensja RSB', 6300.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (14, 'przychód', 'Przychody', '800+', 2400.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (15, 'przychód', 'Przychody', 'Pensja Rodzice', 500.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (16, 'przychód', 'Przychody', 'RKO', 1000.00);
+INSERT INTO "szablony_transakcji" ("id", "typ", "kategoria", "opis", "kwota") VALUES (17, 'przychód', 'Przychody', 'Alimenty', 1000.00);
+
+
+-- Transakcje
+-- Czerwiec 2025
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (1, 'wydatek', '2025-06', 'Inne', 'balans', 5865.54, '2025-06-30 20:00:00', 'Jacek');
+
+-- Lipiec 2025
+-- Przychody (NOWOŚĆ)
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (31, 'przychód', '2025-07', 'Przychody', 'Pensja RSB', 6300.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (32, 'przychód', '2025-07', 'Przychody', '800+', 2400.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (33, 'przychód', '2025-07', 'Przychody', 'Pensja Rodzice', 500.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (34, 'przychód', '2025-07', 'Przychody', 'RKO', 1000.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (35, 'przychód', '2025-07', 'Przychody', 'Alimenty', 1000.00, '2025-07-01 00:00:00', 'System');
+
+-- Podatki/Raty/Opłaty
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (2, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Komornik', 675.53, '2025-07-02 14:08:00', 'Maja');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (3, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Internet', 120.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (4, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Kredyt', 1229.04, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (5, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Raty Alior do 08.2026', 180.39, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (6, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Raty Alior do 10.2026', 48.42, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (7, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Raty Alior do 10.2026', 54.44, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (8, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Raty Alior do 05.2026', 182.45, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (9, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Śmieci', 195.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (10, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Kredyt do 06.2027', 180.77, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (11, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Santander kredyt do 12.2026', 227.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (12, 'wydatek', '2025-07', 'Podatki/Raty/Opłaty', 'Telefony (3)', 90.00, '2025-07-01 00:00:00', 'System');
+
+-- Jedzenie
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (13, 'wydatek', '2025-07', 'Jedzenie', 'makro', 440.06, '2025-07-08 15:22:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (14, 'wydatek', '2025-07', 'Jedzenie', 'lidl', 37.24, '2025-07-08 15:21:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (15, 'wydatek', '2025-07', 'Jedzenie', 'lidl', 16.84, '2025-07-08 15:21:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (16, 'wydatek', '2025-07', 'Jedzenie', 'lidl', 20.96, '2025-07-08 15:20:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (17, 'wydatek', '2025-07', 'Jedzenie', 'Lidl sp. z o. o. sp. k.', 27.93, '2025-07-03 22:00:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (18, 'wydatek', '2025-07', 'Jedzenie', 'Lidl', 445.29, '2025-07-03 22:00:00', 'Maja');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (19, 'wydatek', '2025-07', 'Jedzenie', 'Zakupy zabka', 38.53, '2025-07-03 03:02:00', 'Maja');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (20, 'wydatek', '2025-07', 'Jedzenie', 'Lidl sp. z o. o. sp. k.', 41.98, '2025-07-02 22:00:00', 'Maja');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (21, 'wydatek', '2025-07', 'Jedzenie', 'Lidl', 268.61, '2025-07-02 11:03:00', 'Jacek');
+
+-- Inne
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (22, 'wydatek', '2025-07', 'Inne', 'TJX Poland Sp. z o.o.', 248.95, '2025-07-04 00:00:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (23, 'wydatek', '2025-07', 'Inne', 'SAMBOR', 113.92, '2025-07-03 00:00:00', 'Maja');
+
+-- Lekarze i leki
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (24, 'wydatek', '2025-07', 'Lekarze i leki', 'Psychiatra Antek', 250.00, '2025-07-02 09:04:00', 'Jacek');
+
+-- Rozrywka
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (25, 'wydatek', '2025-07', 'Rozrywka', 'Steam', 37.98, '2025-07-02 22:00:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (26, 'wydatek', '2025-07', 'Rozrywka', 'Gierka Steam', 45.77, '2025-07-02 10:58:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (27, 'wydatek', '2025-07', 'Rozrywka', 'netflix', 33.00, '2025-07-01 00:00:00', 'System');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (28, 'wydatek', '2025-07', 'Rozrywka', 'Youtube premium', 60.00, '2025-07-01 00:00:00', 'System');
+
+-- Paliwo
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (29, 'wydatek', '2025-07', 'Paliwo', 'orlen', 79.36, '2025-07-08 15:23:00', 'Jacek');
+INSERT INTO "transakcje" ("id", "typ", "miesiac", "kategoria", "opis", "kwota", "data_transakcji", "uzytkownik") VALUES (30, 'wydatek', '2025-07', 'Paliwo', 'ORLEN S.A.', 96.66, '2025-07-01 22:00:00', 'Jacek');
+
 COMMIT;
