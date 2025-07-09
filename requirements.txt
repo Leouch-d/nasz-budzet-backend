@@ -10,3 +10,4 @@ Flask-Bcrypt
 Flask-JWT-Extended
 gunicorn
 Pillow>=10.0.0 # <-- NOWA BIBLIOTEKA
+psycopg2-binary

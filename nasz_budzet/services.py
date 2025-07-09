@@ -5,7 +5,6 @@ import traceback
 from PIL import Image
 import io
 
-# NOWA FUNKCJA DO PRZETWARZANIA PARAGONÓW
 def przetworz_paragon_z_gemini(image_bytes):
     """
     Analizuje obraz paragonu za pomocą multimodalnego modelu Gemini,
@@ -22,13 +21,10 @@ def przetworz_paragon_z_gemini(image_bytes):
         return {"error": "Brak klucza GEMINI_API_KEY w konfiguracji serwera."}
 
     try:
-        # Załaduj obraz z bajtów
         img = Image.open(io.BytesIO(image_bytes))
+        # Używamy modelu zoptymalizowanego pod kątem szybkości i wydajności.
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
-        # Używamy najnowszego, potężnego modelu multimodalnego
-        model = genai.GenerativeModel('gemini-2.5-flash')
-
-        # Precyzyjne polecenie dla AI, proszące o zwrotkę w formacie JSON
         prompt = (
             "Jesteś precyzyjnym asystentem do analizy paragonów fiskalnych z Polski. "
             "Twoim zadaniem jest przeanalizowanie tego zdjęcia paragonu i wyodrębnienie z niego trzech informacji:\n"
@@ -41,10 +37,9 @@ def przetworz_paragon_z_gemini(image_bytes):
             "Nie dodawaj żadnych dodatkowych wyjaśnień ani formatowania, tylko czysty JSON."
         )
 
-        # Wyślij obraz i polecenie do Gemini
         response = model.generate_content([prompt, img])
-
-        # Wyczyść odpowiedź i spróbuj sparsować JSON
+        
+        # Czasem AI opakowuje odpowiedź w bloki kodu markdown, więc je usuwamy.
         cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
         
         print(f"Info AI (Paragon): Surowa odpowiedź Gemini: {cleaned_response}")
@@ -68,43 +63,48 @@ def kategoryzuj_z_gemini(opis_transakcji, typ_transakcji, dostepne_kategorie=Non
     Używa dynamicznej listy kategorii dostarczonej przez użytkownika.
     """
     if not os.getenv('GEMINI_API_KEY'):
+        print("Ostrzeżenie: Brak klucza GEMINI_API_KEY. Używam kategorii domyślnej.")
         return "Inne" if typ_transakcji == 'wydatek' else "Inne przychody"
 
     if not dostepne_kategorie:
+        # Domyślne kategorie na wypadek, gdyby lista nie została dostarczona
         if typ_transakcji == 'wydatek':
             dostepne_kategorie = ["Jedzenie", "Paliwo", "Raty i Podatki", "Inne", "Fastfoody", "Rozrywka", "Dzieci", "Ubrania", "Zdrowie i Uroda"]
         else:
             dostepne_kategorie = ["Wypłata", "Premia", "Sprzedaż", "Zwrot podatku", "Prezent", "Inne przychody"]
 
-    lista_kategorii_str = ", ".join(dostepne_kategorie)
+    lista_kategorii_str = ", ".join(f"'{k}'" for k in dostepne_kategorie)
     kategoria_domyslna = "Inne" if typ_transakcji == 'wydatek' else "Inne przychody"
 
+    # --- POPRAWIONY PROMPT DO KATEGORYZACJI ---
     prompt = (
-            "Jesteś precyzyjnym asystentem do analizy paragonów fiskalnych z Polski. "
-            "Twoim zadaniem jest przeanalizowanie tego zdjęcia paragonu i wyodrębnienie z niego trzech informacji:\n"
-            "1. Nazwa sprzedawcy/sklepu (np. 'Biedronka', 'Lidl sp. z o.o.', 'ORLEN S.A.'). To najważniejsza informacja, postaraj się ją znaleźć.\n"
-            "2. Data transakcji w formacie RRRR-MM-DD. Jeśli znajdziesz datę w innym formacie, przekonwertuj ją.\n"
-            "3. Całkowita kwota do zapłaty (jako liczba, użyj kropki jako separatora dziesiętnego). Szukaj słów kluczowych 'SUMA', 'RAZEM', 'PLN'.\n\n"
-            "Zwróć odpowiedź *wyłącznie* w formacie JSON, używając następujących kluczy: "
-            "{\"opis\": \"<nazwa_sprzedawcy>\", \"data\": \"<data_RRRR-MM-DD>\", \"kwota\": <kwota_liczba>}.\n"
-            "Nawet jeśli nie jesteś pewien na 100%, zwróć swoją najlepszą próbę odczytania danych, a nie null. "
-            "Nie dodawaj żadnych dodatkowych wyjaśnień ani formatowania, tylko czysty JSON."
+        f"Jesteś asystentem AI, którego zadaniem jest precyzyjna kategoryzacja transakcji finansowych. Na podstawie poniższego opisu transakcji, wybierz JEDNĄ, najbardziej pasującą kategorię z podanej listy.\n\n"
+        f"**Opis transakcji:** \"{opis_transakcji}\"\n\n"
+        f"**Dostępne kategorie:** [{lista_kategorii_str}]\n\n"
+        f"Twoja odpowiedź musi być *dokładnie* jedną z nazw kategorii z powyższej listy. Nie dodawaj żadnych wyjaśnień, cytatów ani znaków interpunkcyjnych. Jeśli absolutnie żadna kategoria nie pasuje, zwróć słowo '{kategoria_domyslna}'."
     )
 
     try:
-        # Używamy nowszego i bardziej uniwersalnego modelu
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(prompt)
 
-        if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-            sugerowana_kategoria = response.candidates[0].content.parts[0].text.strip()
+        # Sprawdzanie, czy odpowiedź nie jest pusta
+        if response.text:
+            # Usuwamy ewentualne cudzysłowy i białe znaki
+            sugerowana_kategoria = response.text.strip().replace("'", "").replace('"', '')
+            
+            # Sprawdzamy, czy zwrócona kategoria jest na liście dozwolonych
             if sugerowana_kategoria in dostepne_kategorie:
                 print(f"Info AI: Gemini zasugerował kategorię '{sugerowana_kategoria}' dla opisu '{opis_transakcji}'.")
                 return sugerowana_kategoria
-
-        print(f"Ostrzeżenie AI: Gemini zwrócił nieznaną lub pustą odpowiedź. Używam '{kategoria_domyslna}'.")
-        return kategoria_domyslna
+            else:
+                print(f"Ostrzeżenie AI: Gemini zwrócił nieznaną kategorię: '{sugerowana_kategoria}'. Używam '{kategoria_domyslna}'.")
+                return kategoria_domyslna
+        else:
+             print(f"Ostrzeżenie AI: Gemini zwrócił pustą odpowiedź. Używam '{kategoria_domyslna}'.")
+             return kategoria_domyslna
 
     except Exception as e:
         print(f"BŁĄD AI: Wystąpił problem podczas komunikacji z Gemini: {e}")
+        traceback.print_exc()
         return f"{kategoria_domyslna} (błąd API)"
