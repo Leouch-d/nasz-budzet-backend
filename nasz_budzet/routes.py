@@ -7,13 +7,13 @@ from .services import kategoryzuj_z_gemini, przetworz_paragon_z_gemini
 from datetime import datetime
 from collections import defaultdict
 import traceback
-import pandas as pd
+# import pandas as pd # Wyłączamy, bo nie jest potrzebne
 import io
 import json
 
 bp = Blueprint('api', __name__)
 
-# ... (endpointy scan-receipt, export, kategorie, transakcje bez zmian) ...
+# ... (endpointy scan-receipt, kategorie, transakcje bez zmian) ...
 @bp.route('/scan-receipt', methods=['POST'])
 def scan_receipt():
     if 'file' not in request.files:
@@ -32,29 +32,29 @@ def scan_receipt():
             traceback.print_exc()
             return jsonify({"error": f"Wewnętrzny błąd serwera podczas przetwarzania obrazu: {str(e)}"}), 500
 
-@bp.route('/export', methods=['GET'])
-def export_transactions():
-    try:
-        transakcje = Transakcja.query.order_by(Transakcja.data_transakcji.asc()).all()
-        if not transakcje:
-            return jsonify({"error": "Brak transakcji do wyeksportowania"}), 404
-        transakcje_lista = [t.to_dict() for t in transakcje]
-        df = pd.DataFrame(transakcje_lista)
-        df_export = df[['data_transakcji', 'typ', 'kategoria', 'opis', 'kwota', 'uzytkownik']]
-        df_export.rename(columns={
-            'data_transakcji': 'Data', 'typ': 'Typ', 'kategoria': 'Kategoria',
-            'opis': 'Opis', 'kwota': 'Kwota (PLN)', 'uzytkownik': 'Użytkownik'
-        }, inplace=True)
-        output = io.StringIO()
-        df_export.to_csv(output, index=False, encoding='utf-8-sig', sep=';')
-        csv_data = output.getvalue()
-        response = make_response(csv_data)
-        response.headers["Content-Disposition"] = "attachment; filename=transakcje.csv"
-        response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
-        return response
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": f"Wewnętrzny błąd serwera podczas eksportu: {str(e)}"}), 500
+# @bp.route('/export', methods=['GET'])
+# def export_transactions():
+#     try:
+#         transakcje = Transakcja.query.order_by(Transakcja.data_transakcji.asc()).all()
+#         if not transakcje:
+#             return jsonify({"error": "Brak transakcji do wyeksportowania"}), 404
+#         transakcje_lista = [t.to_dict() for t in transakcje]
+#         df = pd.DataFrame(transakcje_lista)
+#         df_export = df[['data_transakcji', 'typ', 'kategoria', 'opis', 'kwota', 'uzytkownik']]
+#         df_export.rename(columns={
+#             'data_transakcji': 'Data', 'typ': 'Typ', 'kategoria': 'Kategoria',
+#             'opis': 'Opis', 'kwota': 'Kwota (PLN)', 'uzytkownik': 'Użytkownik'
+#         }, inplace=True)
+#         output = io.StringIO()
+#         df_export.to_csv(output, index=False, encoding='utf-8-sig', sep=';')
+#         csv_data = output.getvalue()
+#         response = make_response(csv_data)
+#         response.headers["Content-Disposition"] = "attachment; filename=transakcje.csv"
+#         response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
+#         return response
+#     except Exception as e:
+#         traceback.print_exc()
+#         return jsonify({"error": f"Wewnętrzny błąd serwera podczas eksportu: {str(e)}"}), 500
 
 @bp.route('/kategorie', methods=['GET', 'POST'])
 def handle_kategorie():
@@ -168,7 +168,6 @@ def financial_summary():
     try:
         wszystkie_transakcje = Transakcja.query.order_by(Transakcja.miesiac.asc()).all()
         
-        # ZMIANA: Uproszczona struktura danych, bez podziału na użytkowników
         miesieczne_dane = defaultdict(lambda: {
             'przychody': 0.0,
             'wydatki': 0.0,
@@ -191,7 +190,6 @@ def financial_summary():
             bilans_miesiaca = dane['przychody'] - dane['wydatki']
             saldo_na_koniec_miesiaca = saldo_poprzedniego_miesiaca + bilans_miesiaca
             
-            # ZMIANA: Usunięto podsumowanie per użytkownik, zwracamy czystsze dane
             finalne_podsumowanie[miesiac] = {
                 'bilansOtwarcia': round(saldo_poprzedniego_miesiaca, 2),
                 'przychody': round(dane['przychody'], 2),
