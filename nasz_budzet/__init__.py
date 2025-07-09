@@ -12,8 +12,22 @@ db = SQLAlchemy()
 def create_app():
     app = Flask(__name__)
     
+    # --- ZMODYFIKOWANA SEKCJA KONFIGURACJI BAZY DANYCH ---
+    # Pobiera DATABASE_URL ze środowiska (np. z Railway).
+    db_url = os.getenv('DATABASE_URL')
+    
+    # Jeśli zmienna istnieje (czyli jesteśmy na serwerze produkcyjnym jak Railway)
+    if db_url:
+        # Railway używa "postgres://" w URL, a SQLAlchemy wymaga "postgresql://"
+        # Ta linia dokonuje niezbędnej zamiany.
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    # Ustawia URL bazy danych na ten z Railway. 
+    # Jeśli go nie ma (bo uruchamiasz apkę lokalnie), użyje lokalnego pliku SQLite.
     basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'budzet.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///' + os.path.join(basedir, '..', 'budzet.db')
+    # --- KONIEC ZMODYFIKOWANEJ SEKCJI ---
+    
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     CORS(app)
