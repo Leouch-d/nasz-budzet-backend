@@ -30,5 +30,5 @@ COPY . .
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Ustawiamy komendę, która uruchomi aplikację, gdy kontener wystartuje
-# Gunicorn będzie nasłuchiwał na porcie podanym przez Railway
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT"]
+# Ta wersja komendy poprawnie odczytuje zmienną $PORT
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT"]
