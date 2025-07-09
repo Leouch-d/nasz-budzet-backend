@@ -93,6 +93,7 @@ def handle_jedna_kategoria(kategoria_id):
         db.session.rollback()
         return jsonify({"error": f"Błąd bazy danych podczas usuwania: {str(e)}"}), 500
 
+# --- FUNKCJA Z POPRAWKĄ DLA POSTGRESQL ---
 @bp.route('/transakcje', methods=['GET', 'POST'])
 def handle_transakcje():
     if request.method == 'GET':
@@ -110,7 +111,9 @@ def handle_transakcje():
                 data_transakcji_obj = datetime.utcnow()
         nowy_miesiac = data_transakcji_obj.strftime("%Y-%m")
         try:
-            istniejaca_transakcja_w_miesiacu = Transakcja.query.filter(func.strftime('%Y-%m', Transakcja.data_transakcji) == nowy_miesiac).first()
+            # Poprawka: Użycie to_char zamiast strftime dla kompatybilności z PostgreSQL
+            istniejaca_transakcja_w_miesiacu = Transakcja.query.filter(func.to_char(Transakcja.data_transakcji, 'YYYY-MM') == nowy_miesiac).first()
+            
             if not istniejaca_transakcja_w_miesiacu:
                 szablony = SzablonTransakcji.query.all()
                 for szablon in szablony:
