@@ -1,19 +1,19 @@
 from . import db
 from datetime import datetime
+from sqlalchemy import Sequence
 
-# Usunięto ręczne definicje sekwencji, ponieważ SQLAlchemy
-# i sterownik psycopg2 automatycznie zarządzają tym w PostgreSQL,
-# gdy 'id = db.Column(db.Integer, primary_key=True)'.
+# Ta wersja jest POPRAWNA dla strategii naprawy istniejącej bazy danych.
+# Aplikacja musi wiedzieć, jakich sekwencji ma szukać w bazie.
+# Te sekwencje zostaną utworzone przez skrypt SQL.
+
+transakcje_id_seq = Sequence('transakcje_id_seq')
+kategorie_id_seq = Sequence('kategorie_id_seq')
+szablony_transakcji_id_seq = Sequence('szablony_transakcji_id_seq')
+
 
 class Kategoria(db.Model):
-    """
-    Model reprezentujący kategorię wydatku lub przychodu.
-    """
     __tablename__ = 'kategorie'
-    
-    # Uproszczona definicja klucza głównego.
-    # SQLAlchemy automatycznie skonfiguruje auto-inkrementację (SERIAL) w PostgreSQL.
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, kategorie_id_seq, primary_key=True, server_default=kategorie_id_seq.next_value())
     nazwa = db.Column(db.String(100), nullable=False, unique=True)
     typ = db.Column(db.String(20), nullable=False) # 'wydatek' lub 'przychód'
 
@@ -26,13 +26,8 @@ class Kategoria(db.Model):
         }
 
 class Transakcja(db.Model):
-    """
-    Model reprezentujący pojedynczą transakcję finansową.
-    """
     __tablename__ = 'transakcje'
-
-    # Uproszczona definicja klucza głównego.
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, transakcje_id_seq, primary_key=True, server_default=transakcje_id_seq.next_value())
     typ = db.Column(db.String(20), nullable=False)
     miesiac = db.Column(db.String(7), nullable=False) 
     kategoria = db.Column(db.String(100), nullable=True)
@@ -55,9 +50,6 @@ class Transakcja(db.Model):
         }
 
 class KategoriaLimit(db.Model):
-    """
-    Model reprezentujący limit wydatków dla danej kategorii.
-    """
     __tablename__ = 'kategoria_limit'
     kategoria = db.Column(db.String(100), primary_key=True)
     limit = db.Column(db.Float, nullable=False)
@@ -67,13 +59,8 @@ class KategoriaLimit(db.Model):
         return {'kategoria': self.kategoria, 'limit': self.limit}
 
 class SzablonTransakcji(db.Model):
-    """
-    Model reprezentujący szablon dla transakcji cyklicznych.
-    """
     __tablename__ = 'szablony_transakcji'
-
-    # Uproszczona definicja klucza głównego.
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, szablony_transakcji_id_seq, primary_key=True, server_default=szablony_transakcji_id_seq.next_value())
     typ = db.Column(db.String(20), nullable=False)
     kategoria = db.Column(db.String(100), nullable=False)
     opis = db.Column(db.String(255), nullable=False)
@@ -81,10 +68,4 @@ class SzablonTransakcji(db.Model):
     
     def to_dict(self): 
         """Konwertuje obiekt szablonu na słownik."""
-        return { 
-            'id': self.id, 
-            'typ': self.typ, 
-            'kategoria': self.kategoria, 
-            'opis': self.opis, 
-            'kwota': self.kwota 
-        }
+        return { 'id': self.id, 'typ': self.typ, 'kategoria': self.kategoria, 'opis': self.opis, 'kwota': self.kwota }
