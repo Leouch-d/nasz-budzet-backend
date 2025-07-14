@@ -1,10 +1,18 @@
-from nasz_budzet import db
+from . import db
 from datetime import datetime
+from sqlalchemy import Sequence
 
-# NOWOŚĆ: Model do zarządzania kategoriami przez użytkownika
+# NOWOŚĆ: Definicja sekwencji dla auto-inkrementacji ID w PostgreSQL
+# To jest klucz do rozwiązania problemu
+transakcje_id_seq = Sequence('transakcje_id_seq')
+kategorie_id_seq = Sequence('kategorie_id_seq')
+szablony_transakcji_id_seq = Sequence('szablony_transakcji_id_seq')
+
+
 class Kategoria(db.Model):
     __tablename__ = 'kategorie'
-    id = db.Column(db.Integer, primary_key=True)
+    # ZMIANA: Dodajemy server_default, aby PostgreSQL sam nadawał ID
+    id = db.Column(db.Integer, kategorie_id_seq, primary_key=True, server_default=kategorie_id_seq.next_value())
     nazwa = db.Column(db.String(100), nullable=False, unique=True)
     typ = db.Column(db.String(20), nullable=False) # 'wydatek' lub 'przychód'
 
@@ -18,7 +26,8 @@ class Kategoria(db.Model):
 
 class Transakcja(db.Model):
     __tablename__ = 'transakcje'
-    id = db.Column(db.Integer, primary_key=True)
+    # ZMIANA: Dodajemy server_default, aby PostgreSQL sam nadawał ID
+    id = db.Column(db.Integer, transakcje_id_seq, primary_key=True, server_default=transakcje_id_seq.next_value())
     typ = db.Column(db.String(20), nullable=False)
     miesiac = db.Column(db.String(7), nullable=False) 
     kategoria = db.Column(db.String(100), nullable=True)
@@ -51,7 +60,8 @@ class KategoriaLimit(db.Model):
 
 class SzablonTransakcji(db.Model):
     __tablename__ = 'szablony_transakcji'
-    id = db.Column(db.Integer, primary_key=True)
+    # ZMIANA: Dodajemy server_default, aby PostgreSQL sam nadawał ID
+    id = db.Column(db.Integer, szablony_transakcji_id_seq, primary_key=True, server_default=szablony_transakcji_id_seq.next_value())
     typ = db.Column(db.String(20), nullable=False)
     kategoria = db.Column(db.String(100), nullable=False)
     opis = db.Column(db.String(255), nullable=False)
