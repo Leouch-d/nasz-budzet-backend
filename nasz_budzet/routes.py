@@ -7,15 +7,17 @@ from .services import kategoryzuj_z_gemini, przetworz_paragon_z_gemini
 from datetime import datetime
 from collections import defaultdict
 import traceback
-# import pandas as pd # Wyłączamy, bo nie jest potrzebne
 import io
 import json
 
 bp = Blueprint('api', __name__)
 
-# ... (endpointy scan-receipt, kategorie, transakcje bez zmian) ...
 @bp.route('/scan-receipt', methods=['POST'])
 def scan_receipt():
+    """
+    Endpoint do skanowania paragonu. Przyjmuje plik obrazu, przesyła go do serwisu Gemini
+    i zwraca wyekstrahowane dane transakcji w formacie JSON.
+    """
     if 'file' not in request.files:
         return jsonify({"error": "Brak pliku w żądaniu"}), 400
     file = request.files['file']
@@ -32,51 +34,29 @@ def scan_receipt():
             traceback.print_exc()
             return jsonify({"error": f"Wewnętrzny błąd serwera podczas przetwarzania obrazu: {str(e)}"}), 500
 
-# @bp.route('/export', methods=['GET'])
-# def export_transactions():
-#     try:
-#         transakcje = Transakcja.query.order_by(Transakcja.data_transakcji.asc()).all()
-#         if not transakcje:
-#             return jsonify({"error": "Brak transakcji do wyeksportowania"}), 404
-#         transakcje_lista = [t.to_dict() for t in transakcje]
-#         df = pd.DataFrame(transakcje_lista)
-#         df_export = df[['data_transakcji', 'typ', 'kategoria', 'opis', 'kwota', 'uzytkownik']]
-#         df_export.rename(columns={
-#             'data_transakcji': 'Data', 'typ': 'Typ', 'kategoria': 'Kategoria',
-#             'opis': 'Opis', 'kwota': 'Kwota (PLN)', 'uzytkownik': 'Użytkownik'
-#         }, inplace=True)
-#         output = io.StringIO()
-#         df_export.to_csv(output, index=False, encoding='utf-8-sig', sep=';')
-#         csv_data = output.getvalue()
-#         response = make_response(csv_data)
-#         response.headers["Content-Disposition"] = "attachment; filename=transakcje.csv"
-#         response.headers["Content-type"] = "text/csv; charset=utf-8-sig"
-#         return response
-#     except Exception as e:
-#         traceback.print_exc()
-#         return jsonify({"error": f"Wewnętrzny błąd serwera podczas eksportu: {str(e)}"}), 500
-
 @bp.route('/kategorie', methods=['GET', 'POST'])
 def handle_kategorie():
+    """
+    Endpoint do zarządzania kategoriami.
+    GET: Zwraca listę wszystkich zdefiniowanych kategorii.
+    POST: Tworzy nową kategorię.
+    """
     if request.method == 'GET':
         try:
-            kategorie_z_tabeli = {k.nazwa: k for k in Kategoria.query.all()}
-            kategorie_z_transakcji = db.session.query(distinct(Transakcja.kategoria)).all()
-            for kat_tuple in kategorie_z_transakcji:
-                nazwa_kat = kat_tuple[0]
-                if nazwa_kat and nazwa_kat not in kategorie_z_tabeli:
-                    pass
-            finalna_lista = sorted(list(kategorie_z_tabeli.values()), key=lambda x: (x.typ, x.nazwa))
-            return jsonify([k.to_dict() for k in finalna_lista])
+            kategorie = Kategoria.query.order_by(Kategoria.typ, Kategoria.nazwa).all()
+            return jsonify([k.to_dict() for k in kategorie])
         except Exception as e:
             return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+            
     if request.method == 'POST':
         dane = request.get_json()
         if not dane or 'nazwa' not in dane or 'typ' not in dane:
             return jsonify({'error': 'Brakuje pól "nazwa" lub "typ"'}), 400
+        
         istniejaca = Kategoria.query.filter_by(nazwa=dane['nazwa']).first()
         if istniejaca:
             return jsonify({'error': f'Kategoria "{dane["nazwa"]}" już istnieje.'}), 409
+            
         nowa_kategoria = Kategoria(nazwa=dane['nazwa'], typ=dane['typ'])
         db.session.add(nowa_kategoria)
         db.session.commit()
@@ -84,45 +64,76 @@ def handle_kategorie():
 
 @bp.route('/kategorie/<int:kategoria_id>', methods=['DELETE'])
 def handle_jedna_kategoria(kategoria_id):
+    """Endpoint do usuwania pojedynczej kategorii."""
     kategoria = Kategoria.query.get_or_404(kategoria_id)
     try:
         db.session.delete(kategoria)
         db.session.commit()
-        return jsonify({'message': f'Kategoria {kategoria_id} usunięta'}), 200
+        return jsonify({'message': f'Kategoria {kategoria.nazwa} usunięta'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Błąd bazy danych podczas usuwania: {str(e)}"}), 500
 
-# --- FUNKCJA Z POPRAWKĄ DLA POSTGRESQL ---
+@bp.route('/transakcje/recent', methods=['GET'])
+def get_recent_transactions():
+    """Zwraca 10 ostatnio dodanych transakcji."""
+    try:
+        ostatnie_transakcje = Transakcja.query.order_by(Transakcja.id.desc()).limit(10).all()
+        return jsonify([t.to_dict() for t in ostatnie_transakcje])
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+
 @bp.route('/transakcje', methods=['GET', 'POST'])
 def handle_transakcje():
+    """
+    Endpoint do zarządzania transakcjami.
+    GET: Zwraca listę wszystkich transakcji (lub filtrowanych po użytkowniku).
+    POST: Dodaje nową transakcję.
+    """
     if request.method == 'GET':
-        wszystkie_transakcje = Transakcja.query.order_by(Transakcja.data_transakcji.desc()).all()
+        uzytkownik = request.args.get('uzytkownik')
+        query = Transakcja.query
+        if uzytkownik:
+            query = query.filter_by(uzytkownik=uzytkownik)
+        wszystkie_transakcje = query.order_by(Transakcja.id.desc()).all()
         return jsonify([t.to_dict() for t in wszystkie_transakcje])
+        
     if request.method == 'POST':
         dane = request.get_json()
         if not dane or not all(k in dane for k in ['typ', 'kwota', 'opis', 'uzytkownik']):
             return jsonify({'error': 'Brakuje wymaganych pól (typ, kwota, opis, uzytkownik)'}), 400
+        
         data_transakcji_obj = datetime.utcnow()
         if 'data_transakcji' in dane and dane['data_transakcji']:
             try:
                 data_transakcji_obj = datetime.fromisoformat(dane['data_transakcji'].replace('Z', '+00:00'))
             except (ValueError, TypeError):
-                data_transakcji_obj = datetime.utcnow()
+                pass
+        
         nowy_miesiac = data_transakcji_obj.strftime("%Y-%m")
+        
         try:
-            # Poprawka: Użycie to_char zamiast strftime dla kompatybilności z PostgreSQL
-            istniejaca_transakcja_w_miesiacu = Transakcja.query.filter(func.to_char(Transakcja.data_transakcji, 'YYYY-MM') == nowy_miesiac).first()
+            # POPRAWKA: Sprawdzamy, czy w danym miesiącu istnieje już jakakolwiek transakcja SYSTEMOWA.
+            # To zapobiega wielokrotnemu dodawaniu automatów, ale nie blokuje dodawania
+            # transakcji użytkownika do istniejących miesięcy.
+            automat_juz_dodany = Transakcja.query.filter_by(miesiac=nowy_miesiac, uzytkownik="System").first()
             
-            if not istniejaca_transakcja_w_miesiacu:
+            if not automat_juz_dodany:
                 szablony = SzablonTransakcji.query.all()
                 for szablon in szablony:
                     data_dla_cyklicznej = datetime(data_transakcji_obj.year, data_transakcji_obj.month, 1)
                     nowy_automat = Transakcja(typ=szablon.typ, kwota=szablon.kwota, opis=szablon.opis, miesiac=nowy_miesiac, kategoria=szablon.kategoria, data_transakcji=data_dla_cyklicznej, uzytkownik="System" )
                     db.session.add(nowy_automat)
+            
             kategorie_dla_ai = [k.nazwa for k in Kategoria.query.filter_by(typ=dane['typ']).all()]
             kategoria_finalna = kategoryzuj_z_gemini(dane['opis'], dane['typ'], kategorie_dla_ai)
-            nowa_transakcja = Transakcja(typ=dane['typ'], kwota=float(dane['kwota']), opis=dane['opis'], miesiac=nowy_miesiac, kategoria=kategoria_finalna, uzytkownik=dane['uzytkownik'], data_transakcji=data_transakcji_obj)
+            
+            nowa_transakcja = Transakcja(
+                typ=dane['typ'], kwota=float(dane['kwota']), opis=dane['opis'], 
+                miesiac=nowy_miesiac, kategoria=kategoria_finalna, 
+                uzytkownik=dane['uzytkownik'], data_transakcji=data_transakcji_obj
+            )
             db.session.add(nowa_transakcja)
             db.session.commit()
             return jsonify(nowa_transakcja.to_dict()), 201
@@ -133,6 +144,7 @@ def handle_transakcje():
 
 @bp.route('/transakcje/<int:transakcja_id>', methods=['DELETE', 'PUT'])
 def handle_jedna_transakcja(transakcja_id):
+    """Endpoint do usuwania i edycji pojedynczej transakcji."""
     transakcja = Transakcja.query.get_or_404(transakcja_id)
     if request.method == 'DELETE':
         try:
@@ -142,6 +154,7 @@ def handle_jedna_transakcja(transakcja_id):
         except Exception as e:
             db.session.rollback()
             return jsonify({"error": f"Błąd bazy danych: {str(e)}"}), 500
+            
     if request.method == 'PUT':
         dane = request.get_json()
         if not dane:
@@ -152,12 +165,15 @@ def handle_jedna_transakcja(transakcja_id):
                 transakcja.kategoria = kategoryzuj_z_gemini(dane['opis'], transakcja.typ, kategorie_dla_ai)
             elif 'kategoria' in dane:
                 transakcja.kategoria = dane['kategoria']
+            
             transakcja.opis = dane.get('opis', transakcja.opis)
             transakcja.kwota = float(dane.get('kwota', transakcja.kwota))
+            
             if 'data_transakcji' in dane and dane['data_transakcji']:
                 nowa_data = datetime.fromisoformat(dane['data_transakcji'].replace('Z', '+00:00'))
                 transakcja.data_transakcji = nowa_data
                 transakcja.miesiac = nowa_data.strftime("%Y-%m")
+                
             transakcja.uzytkownik = dane.get('uzytkownik', transakcja.uzytkownik)
             db.session.commit()
             return jsonify(transakcja.to_dict()), 200
@@ -168,13 +184,21 @@ def handle_jedna_transakcja(transakcja_id):
 
 @bp.route('/financial_summary', methods=['GET'])
 def financial_summary():
+    """
+    Endpoint generujący podsumowanie finansowe.
+    Filtruje dane, jeśli podano parametr ?uzytkownik=...
+    """
     try:
-        wszystkie_transakcje = Transakcja.query.order_by(Transakcja.miesiac.asc()).all()
+        uzytkownik = request.args.get('uzytkownik')
+        
+        query = Transakcja.query
+        if uzytkownik:
+            query = query.filter(Transakcja.uzytkownik.in_([uzytkownik, 'System']))
+            
+        wszystkie_transakcje = query.order_by(Transakcja.miesiac.asc()).all()
         
         miesieczne_dane = defaultdict(lambda: {
-            'przychody': 0.0,
-            'wydatki': 0.0,
-            'wydatkiKategorie': defaultdict(float)
+            'przychody': 0.0, 'wydatki': 0.0, 'wydatkiKategorie': defaultdict(float)
         })
 
         for t in wszystkie_transakcje:
@@ -209,13 +233,16 @@ def financial_summary():
 
 @bp.route('/limity', methods=['GET', 'POST'])
 def handle_limity():
+    """Endpoint do zarządzania limitami wydatków na kategorie."""
     if request.method == 'GET':
         limity = KategoriaLimit.query.all()
         return jsonify({limit.kategoria: limit.limit for limit in limity})
+        
     if request.method == 'POST':
         dane = request.get_json()
         if not dane or 'kategoria' not in dane or 'limit' not in dane:
             return jsonify({'error': 'Brakuje pól "kategoria" lub "limit"'}), 400
+        
         limit = KategoriaLimit.query.filter_by(kategoria=dane['kategoria']).first()
         if limit:
             limit.limit = float(dane['limit'])
@@ -227,9 +254,11 @@ def handle_limity():
 
 @bp.route('/szablony', methods=['GET', 'POST'])
 def handle_szablony():
+    """Endpoint do zarządzania szablonami transakcji cyklicznych."""
     if request.method == 'GET':
         szablony = SzablonTransakcji.query.all()
         return jsonify([s.to_dict() for s in szablony])
+        
     if request.method == 'POST':
         dane = request.get_json()
         if not all(k in dane for k in ['typ', 'kategoria', 'opis', 'kwota']):
@@ -241,6 +270,7 @@ def handle_szablony():
 
 @bp.route('/szablony/<int:szablon_id>', methods=['DELETE'])
 def delete_szablon(szablon_id):
+    """Endpoint do usuwania pojedynczego szablonu."""
     szablon = SzablonTransakcji.query.get_or_404(szablon_id)
     db.session.delete(szablon)
     db.session.commit()
